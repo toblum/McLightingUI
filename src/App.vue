@@ -150,7 +150,7 @@ export default {
     },
 
     set_mode(mode_id) {
-      this.current_mode = mode_id;
+      this.ws2812fx_mode = mode_id;
       this.ws_send("/" + mode_id);
     },
     set_speed(speed) {
