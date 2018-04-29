@@ -75,7 +75,8 @@ export default {
     connection: null,
     is_connected: false,
     dark_theme: false,
-    ws2812fx_mode: null
+    ws2812fx_mode: null,
+    settings: {}
   }),
 
   methods: {
@@ -93,6 +94,24 @@ export default {
     },
     modeIsActive(mode) {
       return mode.id === this.ws2812fx_mode;
+    },
+
+    readSettings() {
+      this.$http.get("//" + host + "/uistate.json").then(data => {
+        console.log("readSettings()", data.body);
+        this.settings = data.body || {};
+      });
+    },
+    saveSettings() {
+      var formData = new FormData();
+      var blob = new Blob([JSON.stringify(this.settings)], {type : 'application/json'});
+      formData.append('settings', blob, '/uistate.json');
+
+      this.$http.post("//" + host + "/edit", formData).then(data => {
+        console.log("SUCCESS saveSettings()", data);
+      }, err => {
+        console.error("ERROR saveSettings()", err);
+      });
     },
 
     ws_connect() {
@@ -185,6 +204,7 @@ export default {
   },
 
   mounted() {
+    this.readSettings();
     this.getModes();
     this.ws_connect();
   }
