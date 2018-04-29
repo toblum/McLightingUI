@@ -36,7 +36,6 @@ export default {
 
       if (event.type === "touchmove") {
         var el = event.target;
-
         pos = {
           x: Math.round(event.targetTouches[0].pageX - el.offsetLeft),
           y: Math.round(event.targetTouches[0].pageY - el.offsetTop)
@@ -59,8 +58,6 @@ export default {
         a: color[3]
       };
       this.$emit("selected", result);
-
-      // console.log("e", event.type, pos, event, color, hex_color);
     },
 
     drawWheel() {
