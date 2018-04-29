@@ -53,154 +53,154 @@
 </template>
 
 <script>
-  /* eslint-disable */
-  import ColorPicker from "./components/ColorPicker";
+/* eslint-disable */
+import ColorPicker from "./components/ColorPicker";
 
-  var host = "192.168.0.49";
+var host = "192.168.0.49";
 
-  export default {
-    name: "McLightingUI",
-    
-    components: {
-      ColorPicker
-    },
+export default {
+  name: "McLightingUI",
+  
+  components: {
+    ColorPicker
+  },
 
-    data: () => ({
-      color_red: 0,
-      color_green: 0,
-      color_blue: 0,
-      brightness: 192,
-      speed: 192,
-      modes: [{ title: "TV", id: "tv" }],
-      connection: null,
-      is_connected: false,
-      dark_theme: false,
-      ws2812fx_mode: null
-    }),
+  data: () => ({
+    color_red: 0,
+    color_green: 0,
+    color_blue: 0,
+    brightness: 192,
+    speed: 192,
+    modes: [{ title: "TV", id: "tv" }],
+    connection: null,
+    is_connected: false,
+    dark_theme: false,
+    ws2812fx_mode: null
+  }),
 
-    methods: {
-      getModes() {
-        var that = this;
+  methods: {
+    getModes() {
+      var that = this;
 
-        this.$http.get("//" + host + "/get_modes").then(data => {
-          // console.log("Getting modes list via REST:", data);
-          data.body.forEach(item => {
-            if (item.name && item.name.length > 0) {
-              that.modes.push({ title: item.name, id: item.mode });
-            }
-          });
+      this.$http.get("//" + host + "/get_modes").then(data => {
+        // console.log("Getting modes list via REST:", data);
+        data.body.forEach(item => {
+          if (item.name && item.name.length > 0) {
+            that.modes.push({ title: item.name, id: item.mode });
+          }
         });
-      },
-      modeIsActive(mode) {
-        return mode.id === this.ws2812fx_mode;
-      },
-
-      ws_connect() {
-        var that = this;
-        this.connection = new ReconnectingWebSocket("ws://" + host + ":81");
-        this.connection.debug = true;
-        // connection.timeoutInterval = 5400;
-
-        // When the connection is open, send some data to the server
-        this.connection.onopen = function() {
-          console.log("WebSocket Open");
-          that.is_connected = true;
-          that.ws_send("$");
-        };
-
-        // When the connection is open, send some data to the server
-        this.connection.onclose = function() {
-          console.log("WebSocket Closed");
-          that.is_connected = false;
-        };
-
-        // Log errors
-        this.connection.onerror = function(error) {
-          that.is_connected = false;
-          console.error("WebSocket Error", error);
-        };
-
-        // Log messages from the server
-        this.connection.onmessage = function(e) {
-          console.log("WebSocket from server:", e.data);
-          try {
-            var res = JSON.parse(e.data);
-            // console.log("res", res);
-            if (res && res.ws2812fx_mode) {
-              that.ws2812fx_mode = res.ws2812fx_mode;
-            }
-            if (res && res.speed) {
-              that.speed = res.speed;
-            }
-            if (res && res.brightness) {
-              that.brightness = res.brightness;
-            }
-            if (res && res.color) {
-              that.color_red = res.color[0];
-              that.color_green = res.color[1];
-              that.color_blue = res.color[2];
-            }
-          } catch (e) {}
-        };
-      },
-
-      ws_send(message) {
-        console.log("WS send: ", message);
-        this.connection.send(message);
-      },
-
-      set_mode(mode_id) {
-        this.current_mode = mode_id;
-        this.ws_send("/" + mode_id);
-      },
-      set_speed(speed) {
-        this.ws_send("?" + speed);
-      },
-      set_brightness(brightness) {
-        this.ws_send("%" + brightness);
-      },
-      set_color() {
-        this.ws_send(
-          "#" + this.rgbToHex([this.color_red, this.color_green, this.color_blue])
-        );
-      },
-
-      componentToHex(c) {
-        return ("0" + Number(c).toString(16)).slice(-2).toUpperCase();
-      },
-      rgbToHex(rgb) {
-        return (
-          this.componentToHex(rgb[0]) +
-          this.componentToHex(rgb[1]) +
-          this.componentToHex(rgb[2])
-        );
-      },
-
-      onColorSelected(color) {
-        this.color_red = color.r;
-        this.color_green = color.g;
-        this.color_blue = color.b;
-        this.set_color();
-      }
+      });
+    },
+    modeIsActive(mode) {
+      return mode.id === this.ws2812fx_mode;
     },
 
-    mounted() {
-      this.getModes();
-      this.ws_connect();
+    ws_connect() {
+      var that = this;
+      this.connection = new ReconnectingWebSocket("ws://" + host + ":81");
+      this.connection.debug = true;
+      // connection.timeoutInterval = 5400;
+
+      // When the connection is open, send some data to the server
+      this.connection.onopen = function() {
+        console.log("WebSocket Open");
+        that.is_connected = true;
+        that.ws_send("$");
+      };
+
+      // When the connection is open, send some data to the server
+      this.connection.onclose = function() {
+        console.log("WebSocket Closed");
+        that.is_connected = false;
+      };
+
+      // Log errors
+      this.connection.onerror = function(error) {
+        that.is_connected = false;
+        console.error("WebSocket Error", error);
+      };
+
+      // Log messages from the server
+      this.connection.onmessage = function(e) {
+        console.log("WebSocket from server:", e.data);
+        try {
+          var res = JSON.parse(e.data);
+          // console.log("res", res);
+          if (res && res.ws2812fx_mode) {
+            that.ws2812fx_mode = res.ws2812fx_mode;
+          }
+          if (res && res.speed) {
+            that.speed = res.speed;
+          }
+          if (res && res.brightness) {
+            that.brightness = res.brightness;
+          }
+          if (res && res.color) {
+            that.color_red = res.color[0];
+            that.color_green = res.color[1];
+            that.color_blue = res.color[2];
+          }
+        } catch (e) {}
+      };
+    },
+
+    ws_send(message) {
+      console.log("WS send: ", message);
+      this.connection.send(message);
+    },
+
+    set_mode(mode_id) {
+      this.current_mode = mode_id;
+      this.ws_send("/" + mode_id);
+    },
+    set_speed(speed) {
+      this.ws_send("?" + speed);
+    },
+    set_brightness(brightness) {
+      this.ws_send("%" + brightness);
+    },
+    set_color() {
+      this.ws_send(
+        "#" + this.rgbToHex([this.color_red, this.color_green, this.color_blue])
+      );
+    },
+
+    componentToHex(c) {
+      return ("0" + Number(c).toString(16)).slice(-2).toUpperCase();
+    },
+    rgbToHex(rgb) {
+      return (
+        this.componentToHex(rgb[0]) +
+        this.componentToHex(rgb[1]) +
+        this.componentToHex(rgb[2])
+      );
+    },
+
+    onColorSelected(color) {
+      this.color_red = color.r;
+      this.color_green = color.g;
+      this.color_blue = color.b;
+      this.set_color();
     }
-  };
+  },
+
+  mounted() {
+    this.getModes();
+    this.ws_connect();
+  }
+};
 </script>
 
 <style>
-  #content {
-    max-width: 1380px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  /*
-    font-family: "Avenir", Helvetica, Arial, sans-serif;
-    text-align: center;
-    color: #2c3e50;
-    margin-top: 60px;
-  */
+#content {
+  max-width: 1380px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/*
+  font-family: "Avenir", Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+*/
 </style>
