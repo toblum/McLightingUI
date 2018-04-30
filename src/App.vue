@@ -32,19 +32,58 @@
             </v-flex>
           </v-layout>
 
-          <v-container>
+          <v-container pb-5>
+            <v-btn v-if="edit_mode" block color="green" dark @click="saveSettings()"><v-icon>save</v-icon> Save settings</v-btn>
             <v-layout row wrap>
-              <v-flex xs12 sm6 lg4 xl3 v-for="mode in modes" :key="mode.id">
+              <v-flex xs12 sm6 lg4 xl3 v-for="(mode, index) in modes" :key="mode.id" v-if="edit_mode || !mode.hidden">
+                <span v-if="edit_mode">
+                  <v-icon
+                    color="grey lighten-1"
+                    @click="toggle(mode, index)"
+                    v-if="mode.hidden === true"
+                    >star_border</v-icon>
+                  <v-icon
+                    color="yellow darken-2"
+                    @click="toggle(mode, index)"
+                    v-else>star</v-icon>
+                </span>
+
                 <v-btn :id="mode.id" v-on:click="set_mode(mode.id)" class="elevation-6 white--text" v-bind:class="[modeIsActive(mode) ? 'red' : 'blue']">{{ mode.title }} ({{ mode.id }})</v-btn>
               </v-flex>
             </v-layout>
           </v-container>
+
+          <v-speed-dial
+            v-model="fab"
+            transition="scale-transition"
+            bottom
+            right
+            open-on-hover
+            fixed>
+            <v-btn
+              slot="activator"
+              color="pink"
+              dark
+              fab
+              hover
+              v-model="fab">
+              <v-icon>settings</v-icon>
+              <v-icon>close</v-icon>
+            </v-btn>
+            <v-btn
+              fab
+              dark
+              small
+              color="green"
+              v-on:click="edit_mode = !edit_mode">
+              <v-icon>edit</v-icon>
+            </v-btn>
+          </v-speed-dial>
         </v-card>
 
         <v-footer color="primary white--text" class="pa-3">
-          <div><a href="https://github.com/toblum/McLighting/" target="_blank" class="white--text">Project home</a></div>
+          <div><a href="https://github.com/toblum/McLighting/" target="_blank" class="white--text">Project home</a> - &copy; {{ new Date().getFullYear() }}</div>
           <v-spacer></v-spacer>
-          <div>&copy; {{ new Date().getFullYear() }}</div>
         </v-footer>
       </v-content>
     </v-app>
@@ -76,13 +115,14 @@ export default {
     is_connected: false,
     dark_theme: false,
     ws2812fx_mode: null,
-    settings: {}
+    settings: {},
+    edit_mode: false,
+    fab: false
   }),
 
   methods: {
     getModes() {
       var that = this;
-
       this.$http.get("//" + host + "/get_modes").then(data => {
         // console.log("Getting modes list via REST:", data);
         data.body.forEach(item => {
@@ -90,6 +130,7 @@ export default {
             that.modes.push({ title: item.name, id: item.mode });
           }
         });
+        this.readSettings();
       });
     },
     modeIsActive(mode) {
@@ -100,18 +141,40 @@ export default {
       this.$http.get("//" + host + "/uistate.json").then(data => {
         console.log("readSettings()", data.body);
         this.settings = data.body || {};
+        this.applySettings();
+      });
+    },
+    applySettings() {
+      this.modes.forEach((mode, index) => {
+        if (this.settings.visibility.includes(mode.id)) {
+          mode.hidden = true;
+          this.$set(this.modes, index, mode);
+        }
       });
     },
     saveSettings() {
+      var visibility = this.modes.map(mode => {
+        if (mode.hidden) {
+          return mode.id;
+        }
+      }).filter((x) => {return x >= 0});
+      this.settings.visibility = visibility;
+
       var formData = new FormData();
-      var blob = new Blob([JSON.stringify(this.settings)], {type : 'application/json'});
+      var blob = new Blob([JSON.stringify(this.settings)], {type: 'application/json'});
       formData.append('settings', blob, '/uistate.json');
 
       this.$http.post("//" + host + "/edit", formData).then(data => {
-        console.log("SUCCESS saveSettings()", data);
+        console.log("SUCCESS saveSettings()", data, this.settings);
+        this.edit_mode = false;
       }, err => {
         console.error("ERROR saveSettings()", err);
       });
+    },
+
+    toggle(mode, index) {
+      mode.hidden = !mode.hidden;
+      this.$set(this.modes, index, mode);
     },
 
     ws_connect() {
@@ -204,7 +267,6 @@ export default {
   },
 
   mounted() {
-    this.readSettings();
     this.getModes();
     this.ws_connect();
   }
