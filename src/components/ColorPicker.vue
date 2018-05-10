@@ -1,8 +1,11 @@
 <template>
     <v-container>
-        <img ref="color_wheel_image" src="../assets/color-wheel.png" style="display: none" />
-        <canvas ref="canvas" id="color_wheel_canvas" v-on:click="onSelectColor" v-on:touchmove="onSelectColor">
-        </canvas>
+        <canvas ref="canvas" id="color_wheel_canvas" class="text-xs-center" v-on:click="onSelectColor" v-on:touchmove="onSelectColor"></canvas>
+
+        <div id="color_wheel_legend" v-bind:style="{'background-color': '#' + color.hex}">
+          Color: #{{ color.hex }}<br/>
+          R: {{ color.r }}, G: {{ color.g }}, B: {{ color.b }}
+        </div>
     </v-container>
 </template>
 
@@ -12,6 +15,7 @@ export default {
 
   data() {
     return {
+      color: {},
       canvas: null,
       context: null
     };
@@ -57,9 +61,13 @@ export default {
         b: color[2],
         a: color[3]
       };
+      this.color = result;
       this.$emit("selected", result);
     },
 
+    /**
+     * Draws color ring
+     */
     drawWheel() {
       var centerX = this.canvas.width / 2;
       var centerY = this.canvas.height / 2;
@@ -116,13 +124,83 @@ export default {
       this.context.stroke();
       this.context.closePath();
     },
-    drawWheelImage() {
-      var image = new Image();
-      var that = this;
-      image.onload = function() {
-        that.context.drawImage(image, 0, 0, 400, 400);
-      };
-      image.src = this.$refs.color_wheel_image.src;
+
+    /**
+     * Draws color circle
+     */
+    drawCircle() {
+      let radius = this.canvas.width / 2;
+      let image = this.context.createImageData(2 * radius, 2 * radius);
+      let data = image.data;
+
+      for (let x = -radius; x < radius; x++) {
+        for (let y = -radius; y < radius; y++) {
+          let [r, phi] = this.xy2polar(x, y);
+
+          if (r > radius) {
+            // skip all (x,y) coordinates that are outside of the circle
+            continue;
+          }
+
+          let deg = this.rad2deg(phi);
+
+          // Figure out the starting index of this pixel in the image data array.
+          let rowLength = 2 * radius;
+          let adjustedX = x + radius; // convert x from [-50, 50] to [0, 100] (the coordinates of the image data array)
+          let adjustedY = y + radius; // convert y from [-50, 50] to [0, 100] (the coordinates of the image data array)
+          let pixelWidth = 4; // each pixel requires 4 slots in the data array
+          let index = (adjustedX + (adjustedY * rowLength)) * pixelWidth;
+
+          let hue = deg;
+          let saturation = r / radius;
+          let value = 1.0;
+
+          let [red, green, blue] = this.hsv2rgb(hue, saturation, value);
+          let alpha = 255;
+
+          data[index] = red;
+          data[index + 1] = green;
+          data[index + 2] = blue;
+          data[index + 3] = alpha;
+        }
+      }
+      this.context.putImageData(image, 0, 0);
+    },
+    xy2polar(x, y) {
+      let r = Math.sqrt(x * x + y * y);
+      let phi = Math.atan2(y, x);
+      return [r, phi];
+    },
+    rad2deg(rad) {
+      // rad in [-π, π] range
+      // return degree in [0, 360] range
+      return ((rad + Math.PI) / (2 * Math.PI)) * 360;
+    },
+    hsv2rgb(hue, saturation, value) {
+      let chroma = value * saturation;
+      let hue1 = hue / 60;
+      let x = chroma * (1 - Math.abs((hue1 % 2) - 1));
+      let r1, g1, b1;
+
+      if (hue1 >= 0 && hue1 <= 1) {
+        ([r1, g1, b1] = [chroma, x, 0]);
+      } else if (hue1 >= 1 && hue1 <= 2) {
+        ([r1, g1, b1] = [x, chroma, 0]);
+      } else if (hue1 >= 2 && hue1 <= 3) {
+        ([r1, g1, b1] = [0, chroma, x]);
+      } else if (hue1 >= 3 && hue1 <= 4) {
+        ([r1, g1, b1] = [0, x, chroma]);
+      } else if (hue1 >= 4 && hue1 <= 5) {
+        ([r1, g1, b1] = [x, 0, chroma]);
+      } else if (hue1 >= 5 && hue1 <= 6) {
+        ([r1, g1, b1] = [chroma, 0, x]);
+      }
+
+      let m = value - chroma;
+      let [r, g, b] = [r1 + m, g1 + m, b1 + m];
+
+      // Change r,g,b values from [0,1] to [0,255]
+      return [255 * r, 255 * g, 255 * b];
     }
   },
   mounted() {
@@ -132,8 +210,8 @@ export default {
 
     this.context = this.canvas.getContext("2d");
 
+    this.drawCircle();
     // this.drawWheel();
-    this.drawWheelImage();
   }
 };
 </script>
@@ -144,8 +222,16 @@ export default {
     user-select: none;
     width: 100%;
     max-width: 400px;
+    padding: 0;
+    margin: auto;
+    display: block;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     -moz-user-select: none;
+  }
+  #color_wheel_legend {
+    margin-top: 2rem;
+    padding: 0.8rem;
+    text-align: center;
   }
 </style>
