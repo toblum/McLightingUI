@@ -1,6 +1,6 @@
 <template>
     <v-container>
-        <canvas ref="canvas" id="color_wheel_canvas" class="text-xs-center" v-on:click="onSelectColor" v-on:touchmove="onSelectColor"></canvas>
+        <canvas ref="canvas" id="color_wheel_canvas" class="mx-auto" v-on:click="onSelectColor" v-on:touchmove="onSelectColor"></canvas>
 
         <div id="color_wheel_legend" v-bind:style="{'background-color': '#' + color.hex}">
           Color: #{{ color.hex }}<br/>
@@ -222,8 +222,6 @@ export default {
     user-select: none;
     width: 100%;
     max-width: 400px;
-    padding: 0;
-    margin: auto;
     display: block;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
