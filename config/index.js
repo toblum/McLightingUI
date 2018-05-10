@@ -45,7 +45,7 @@ module.exports = {
 
   build: {
     // Template for index.html
-    index: path.resolve(__dirname, '../dist/index.html'),
+    index: path.resolve(__dirname, '../dist/index2.htm'),
 
     // Paths
     assetsRoot: path.resolve(__dirname, '../dist'),
@@ -56,10 +56,12 @@ module.exports = {
      * Source Maps
      */
 
-    // productionSourceMap: true,
-    productionSourceMap: false,
+    productionSourceMap: true,
+    // productionSourceMap: false,
     // https://webpack.js.org/configuration/devtool/#production
     devtool: '#source-map',
+
+    inlineRegex: '.(js|css)$',
 
     // Gzip off by default as many popular static hosts such as
     // Surge or Netlify already gzip all static assets for you.

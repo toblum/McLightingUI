@@ -62,8 +62,8 @@ const webpackConfig = merge(baseWebpackConfig, {
     // you can customize output by editing /index.html
     // see https://github.com/ampedandwired/html-webpack-plugin
     new HtmlWebpackPlugin({
-      // filename: config.build.index,
-      filename: "index2.html",
+      filename: config.build.index,
+      // filename: "index2.html",
       template: 'index.html',
       inject: true,
       minify: {
@@ -76,7 +76,7 @@ const webpackConfig = merge(baseWebpackConfig, {
       // necessary to consistently work with multiple chunks via CommonsChunkPlugin
       chunksSortMode: 'dependency',
 
-      inlineSource: '.(js|css)$'
+      inlineSource: config.build.inlineRegex
     }),
     new HtmlWebpackInlineSourcePlugin(),
     // keep module.id stable when vendor modules does not change
