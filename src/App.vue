@@ -19,13 +19,13 @@
         <v-card>
           <v-layout row wrap>
             <v-flex xs12 sm5>
-              <ColorPicker v-on:selected="onColorSelected"/>
+              <ColorPicker v-on:selected="onColorSelected" :prop_color="color"/>
             </v-flex>
             <v-flex xs12 sm7>
               <v-card-text>
-                <v-slider v-model="color_red" hint="Red" label="R" :max="255" v-on:input="set_color" color="red"></v-slider>
-                <v-slider v-model="color_green" hint="Green" label="G" :max="255" v-on:input="set_color" color="green"></v-slider>
-                <v-slider v-model="color_blue" hint="Blue" label="B" :max="255" v-on:input="set_color" color="blue"></v-slider>
+                <v-slider v-model="color.r" hint="Red" label="R" :max="255" v-on:input="set_color" color="red"></v-slider>
+                <v-slider v-model="color.g" hint="Green" label="G" :max="255" v-on:input="set_color" color="green"></v-slider>
+                <v-slider v-model="color.b" hint="Blue" label="B" :max="255" v-on:input="set_color" color="blue"></v-slider>
                 <v-slider v-model="brightness" prepend-icon="wb_incandescent" hint="Brightness" :max="255" step="12" ticks v-on:input="set_brightness"></v-slider>
                 <v-slider v-model="speed" prepend-icon="slow_motion_video" hint="Speed" :max="255" step="12" ticks v-on:input="set_speed"></v-slider>
               </v-card-text>
@@ -105,9 +105,7 @@ export default {
   },
 
   data: () => ({
-    color_red: 0,
-    color_green: 0,
-    color_blue: 0,
+    color: {r:0, g:0, b:0, hex:"000000"},
     brightness: 192,
     speed: 192,
     modes: [{ title: "TV", id: "tv" }],
@@ -218,9 +216,10 @@ export default {
             that.brightness = res.brightness;
           }
           if (res && res.color) {
-            that.color_red = res.color[0];
-            that.color_green = res.color[1];
-            that.color_blue = res.color[2];
+            that.color.r = res.color[0];
+            that.color.g = res.color[1];
+            that.color.b = res.color[2];
+            that.color.hex = that.rgbToHex([that.color.r, that.color.g, that.color.b]);
           }
         } catch (e) {}
       };
@@ -243,7 +242,7 @@ export default {
     },
     set_color() {
       this.ws_send(
-        "#" + this.rgbToHex([this.color_red, this.color_green, this.color_blue])
+        "#" + this.rgbToHex([this.color.r, this.color.g, this.color.b])
       );
     },
 
@@ -259,9 +258,7 @@ export default {
     },
 
     onColorSelected(color) {
-      this.color_red = color.r;
-      this.color_green = color.g;
-      this.color_blue = color.b;
+      this.color = color;
       this.set_color();
     }
   },

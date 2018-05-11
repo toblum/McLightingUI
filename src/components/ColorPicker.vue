@@ -2,9 +2,9 @@
     <v-container>
         <canvas ref="canvas" id="color_wheel_canvas" class="mx-auto" v-on:click="onSelectColor" v-on:touchmove="onSelectColor"></canvas>
 
-        <div id="color_wheel_legend" v-bind:style="{'background-color': '#' + color.hex}">
-          Color: #{{ color.hex }}<br/>
-          R: {{ color.r }}, G: {{ color.g }}, B: {{ color.b }}
+        <div id="color_wheel_legend" class="elevation-6" vxxxif="color_hex" v-bind:style="{'background-color': '#' + color_hex}">
+          Color: #{{ color_hex }}<br/>
+          R: {{ color.r || "" }}, G: {{ color.g || "" }}, B: {{ color.b || "" }}
         </div>
     </v-container>
 </template>
@@ -15,10 +15,27 @@ export default {
 
   data() {
     return {
-      color: {},
       canvas: null,
       context: null
     };
+  },
+
+  props: ["prop_color"],
+  computed: {
+    color: function() {
+      if (this.prop_color) {
+        return JSON.parse(JSON.stringify(this.prop_color));
+      } else {
+        return {r: 0, g: 0, b: 0};
+      }
+    },
+    color_hex: function() {
+      if (this.color) {
+        return this.rgbToHex([this.color.r, this.color.g, this.color.b]);
+      } else {
+        return "";
+      }
+    }
   },
 
   methods: {
@@ -61,7 +78,6 @@ export default {
         b: color[2],
         a: color[3]
       };
-      this.color = result;
       this.$emit("selected", result);
     },
 
