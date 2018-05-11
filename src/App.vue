@@ -6,10 +6,6 @@
         <!-- <v-toolbar-side-icon></v-toolbar-side-icon> -->
         <v-toolbar-title>Mc Lighting UI</v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn-toggle v-model="dark_theme">
-          <v-btn class="elevation-6" flat v-bind:value="true" v-if="dark_theme === false"><v-icon>brightness_1</v-icon></v-btn>
-          <v-btn class="elevation-6" flat v-bind:value="false" v-else><v-icon>brightness_5</v-icon></v-btn>
-        </v-btn-toggle>
         <v-spacer></v-spacer>
         <span class="group pa-2" v-if="is_connected"><v-icon>wifi</v-icon>&nbsp;<span class="hidden-xs-only">&nbsp;McLighting </span>connected</span>
         <span class="group pa-2" v-else><v-icon>signal_wifi_off</v-icon>&nbsp;&nbsp;McLighting disconnected</span>
@@ -34,6 +30,11 @@
 
           <v-container pb-5>
             <v-btn v-if="edit_mode" block color="green" dark @click="saveSettings()"><v-icon>save</v-icon> Save settings</v-btn>
+            <v-layout v-if="edit_mode">
+              <v-container>
+                <v-switch :label="`Dark mode: ${(dark_theme) ? 'on' : 'off'} `" v-model="dark_theme" color="primary"></v-switch>
+              </v-container>
+            </v-layout>
             <v-layout row wrap>
               <v-flex xs12 sm6 lg4 xl3 v-for="(mode, index) in modes" :key="mode.id" v-if="edit_mode || !mode.hidden">
                 <span v-if="edit_mode">
@@ -94,6 +95,7 @@
 <script>
 /* eslint-disable */
 import ColorPicker from "./components/ColorPicker";
+import * as RWS from 'reconnecting-websocket';
 
 var host = "192.168.0.49";
 
@@ -149,6 +151,7 @@ export default {
           this.$set(this.modes, index, mode);
         }
       });
+      this.dark_theme = this.settings.dark_theme || false;
     },
     saveSettings() {
       var visibility = this.modes.map(mode => {
@@ -157,6 +160,7 @@ export default {
         }
       }).filter((x) => {return x >= 0});
       this.settings.visibility = visibility;
+      this.settings.dark_theme = this.dark_theme;
 
       var formData = new FormData();
       var blob = new Blob([JSON.stringify(this.settings)], {type: 'application/json'});
@@ -177,7 +181,7 @@ export default {
 
     ws_connect() {
       var that = this;
-      this.connection = new ReconnectingWebSocket("ws://" + host + ":81");
+      this.connection = new RWS("ws://" + host + ":81");
       this.connection.debug = true;
       // connection.timeoutInterval = 5400;
 
