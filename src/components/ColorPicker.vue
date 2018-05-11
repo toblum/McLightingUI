@@ -2,7 +2,7 @@
     <v-container>
         <canvas ref="canvas" id="color_wheel_canvas" class="mx-auto" v-on:click="onSelectColor" v-on:touchmove="onSelectColor"></canvas>
 
-        <div id="color_wheel_legend" class="elevation-6" vxxxif="color_hex" v-bind:style="{'background-color': '#' + color_hex}">
+        <div id="color_wheel_legend" class="elevation-6" v-if="color_hex" v-bind:style="{'background-color': '#' + color_hex}">
           Color: #{{ color_hex }}<br/>
           R: {{ color.r || "" }}, G: {{ color.g || "" }}, B: {{ color.b || "" }}
         </div>
