@@ -54,32 +54,22 @@
             </v-layout>
           </v-container>
 
-          <v-speed-dial
-            v-model="fab"
-            transition="scale-transition"
-            bottom
-            right
-            open-on-hover
-            fixed>
+          <v-fab-transition>
             <v-btn
-              slot="activator"
+              v-show="!edit_mode"
+              transition="scale-transition"
+              @click.native.stop="edit_mode = !edit_mode"
               color="pink"
               dark
+              absolute
+              bottom
+              right
               fab
               hover
-              v-model="fab">
+            >
               <v-icon>settings</v-icon>
-              <v-icon>close</v-icon>
             </v-btn>
-            <v-btn
-              fab
-              dark
-              small
-              color="green"
-              v-on:click="edit_mode = !edit_mode">
-              <v-icon>edit</v-icon>
-            </v-btn>
-          </v-speed-dial>
+          </v-fab-transition>
         </v-card>
 
         <v-footer color="primary white--text" class="pa-3">
@@ -280,10 +270,4 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-/*
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-*/
 </style>
