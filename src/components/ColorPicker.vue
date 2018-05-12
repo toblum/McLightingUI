@@ -2,7 +2,7 @@
     <v-container>
         <canvas ref="canvas" id="color_wheel_canvas" class="mx-auto" v-on:click="onSelectColor" v-on:touchmove="onSelectColor"></canvas>
 
-        <div id="color_wheel_legend" class="elevation-6 black--text" v-if="color.r" v-bind:style="{'background-color': '#' + color_hex}">
+        <div id="color_wheel_legend" class="elevation-6 black--text" v-if="color.r >= 0" v-bind:style="{'background-color': '#' + color_hex}">
           Color: #{{ color_hex }}<br/>
           R: {{ color.r || "" }}, G: {{ color.g || "" }}, B: {{ color.b || "" }}
         </div>
@@ -20,8 +20,11 @@ export default {
     };
   },
 
-  props: ["prop_color"],
+  props: ["prop_color", "prop_type"],
   computed: {
+    type: function() {
+      return JSON.parse(JSON.stringify(this.prop_type));
+    },
     color: function() {
       if (this.prop_color) {
         return JSON.parse(JSON.stringify(this.prop_color));
@@ -34,6 +37,13 @@ export default {
         return this.rgbToHex([this.color.r, this.color.g, this.color.b]);
       } else {
         return null;
+      }
+    }
+  },
+  watch: {
+    type: {
+      handler: function(val, oldVal) {
+        this.redrawColorPicker();
       }
     }
   },
@@ -79,6 +89,18 @@ export default {
         a: color[3]
       };
       this.$emit("selected", result);
+    },
+
+    redrawColorPicker() {
+      if (this.context) {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      }
+
+      if (this.type === "circle") {
+        this.drawCircle();
+      } else {
+        this.drawWheel();
+      }
     },
 
     /**
@@ -226,8 +248,9 @@ export default {
 
     this.context = this.canvas.getContext("2d");
 
-    this.drawCircle();
+    // this.drawCircle();
     // this.drawWheel();
+    this.redrawColorPicker();
   }
 };
 </script>

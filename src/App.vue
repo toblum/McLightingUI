@@ -15,7 +15,7 @@
         <v-card>
           <v-layout row wrap>
             <v-flex xs12 sm5>
-              <ColorPicker v-on:selected="onColorSelected" :prop_color="color"/>
+              <ColorPicker v-on:selected="onColorSelected" :prop_color="color" :prop_type="picker_type"/>
             </v-flex>
             <v-flex xs12 sm7>
               <v-card-text>
@@ -29,12 +29,6 @@
           </v-layout>
 
           <v-container pb-5>
-            <v-btn v-if="edit_mode" block color="green" dark @click="saveSettings()"><v-icon>save</v-icon> Save settings</v-btn>
-            <v-layout v-if="edit_mode">
-              <v-container>
-                <v-switch :label="`Dark mode: ${(dark_theme) ? 'on' : 'off'} `" v-model="dark_theme" color="primary"></v-switch>
-              </v-container>
-            </v-layout>
             <v-layout row wrap>
               <v-flex xs12 sm6 lg4 xl3 v-for="(mode, index) in modes" :key="mode.id" v-if="edit_mode || !mode.hidden">
                 <span v-if="edit_mode">
@@ -72,6 +66,38 @@
           </v-fab-transition>
         </v-card>
 
+        <v-card row wrap v-if="edit_mode">
+          <v-layout row wrap class="pa-3 my-2">
+            <v-flex xs12 sm6>
+              <p>Dark mode:</p>
+              <v-switch :label="`${(dark_theme) ? 'ON' : 'OFF'} `" v-model="dark_theme" color="primary"></v-switch>
+            </v-flex>
+            <v-flex xs12 sm6>
+              <p>Select color picker:</p>
+              <v-btn-toggle v-model="picker_type" mandatory>
+                <v-btn flat value="circle">
+                  Circle
+                </v-btn>
+                <v-btn flat value="wheel">
+                  Wheel
+                </v-btn>
+              </v-btn-toggle>
+            </v-flex>
+            <v-flex xs12>
+              <v-btn block color="green" dark class="elevation-6 mb-2" @click="saveSettings()"><v-icon>save</v-icon> Save settings</v-btn>
+            </v-flex>
+          </v-layout>
+        </v-card>
+
+        <v-snackbar
+          :timeout="snackbar_timeout"
+          top
+          :color="snackbar_color"
+          v-model="snackbar"
+        >
+          {{ snackbar_text }}
+        </v-snackbar>
+
         <v-footer color="primary white--text" class="pa-3">
           <div><a href="https://github.com/toblum/McLighting/" target="_blank" class="white--text">Project home</a> - &copy; {{ new Date().getFullYear() }}</div>
           <v-spacer></v-spacer>
@@ -107,7 +133,11 @@ export default {
     ws2812fx_mode: null,
     settings: {},
     edit_mode: false,
-    fab: false
+    picker_type: "circle",
+    snackbar: false,
+    snackbar_text: "",
+    snackbar_color: "info",
+    snackbar_timeout: 2000
   }),
 
   methods: {
@@ -127,6 +157,13 @@ export default {
       return mode.id === this.ws2812fx_mode;
     },
 
+    showSnackbar(message, color, timeout) {
+      this.snackbar_text = message;
+      this.snackbar_color = color;
+      this.snackbar_timeout = timeout;
+      this.snackbar = true;
+    },
+
     readSettings() {
       this.$http.get("//" + host + "/uistate.json").then(data => {
         console.log("readSettings()", data.body);
@@ -142,6 +179,7 @@ export default {
         }
       });
       this.dark_theme = this.settings.dark_theme || false;
+      this.picker_type = this.settings.picker_type || "circle";
     },
     saveSettings() {
       var visibility = this.modes.map(mode => {
@@ -151,6 +189,7 @@ export default {
       }).filter((x) => {return x >= 0});
       this.settings.visibility = visibility;
       this.settings.dark_theme = this.dark_theme;
+      this.settings.picker_type = this.picker_type;
 
       var formData = new FormData();
       var blob = new Blob([JSON.stringify(this.settings)], {type: 'application/json'});
@@ -158,9 +197,11 @@ export default {
 
       this.$http.post("//" + host + "/edit", formData).then(data => {
         console.log("SUCCESS saveSettings()", data, this.settings);
+        this.showSnackbar("Settings saved", "success", 1500);
         this.edit_mode = false;
       }, err => {
         console.error("ERROR saveSettings()", err);
+        this.showSnackbar("Error saving settings, please try again...", "error", 5000);
       });
     },
 
