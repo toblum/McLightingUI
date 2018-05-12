@@ -126,7 +126,7 @@ export default {
     color: {r:0, g:0, b:0, hex:"000000"},
     brightness: 192,
     speed: 192,
-    modes: [{ title: "TV", id: "tv" }],
+    modes: [{ title: "OFF", id: "off" }, { title: "TV", id: "tv" }],
     connection: null,
     is_connected: false,
     dark_theme: false,
@@ -231,8 +231,8 @@ export default {
 
       // Log errors
       this.connection.onerror = function(error) {
-        that.is_connected = false;
         console.error("WebSocket Error", error);
+        that.is_connected = false;
       };
 
       // Log messages from the server
@@ -267,7 +267,12 @@ export default {
 
     set_mode(mode_id) {
       this.ws2812fx_mode = mode_id;
-      this.ws_send("/" + mode_id);
+      if (Number.isInteger(mode_id)) {
+        this.ws_send("/" + mode_id);
+      } else {
+        // For named modes
+        this.ws_send("=" + mode_id);
+      }
     },
     set_speed(speed) {
       this.ws_send("?" + speed);
