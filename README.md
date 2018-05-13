@@ -4,6 +4,8 @@
 
 This web UI was completely rebuilt from scratch unsing the reactive vus.js and Vuetify UI framework. It's still in preview and not completed. You can use it in parallel with the current UI if you want.
 
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/lryDPMA2qpY/0.jpg)](https://www.youtube.com/watch?v=lryDPMA2qpY)
+
 It has the following new features:
 * Fast and reactive UI.
 * Responsive UI that adapts to display size.
