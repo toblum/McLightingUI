@@ -1,4 +1,4 @@
-# mc_lighting_ui
+# McLighting UI (Preview)
 
 > New and improved alternative web UI for [McLighting](https://github.com/toblum/McLighting).
 
