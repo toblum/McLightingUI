@@ -121,7 +121,10 @@
 import ColorPicker from "./components/ColorPicker";
 import * as RWS from 'reconnecting-websocket';  // https://github.com/pladaria/reconnecting-websocket
 
-var host = "192.168.0.49";
+var host = window.location.hostname;
+if (host === "localhost") {
+  host = "192.168.0.49";
+}
 
 export default {
   name: "McLightingUI",
