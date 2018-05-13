@@ -9,10 +9,12 @@
         <v-spacer></v-spacer>
         <span class="group pa-2" v-if="is_connected"><v-icon>wifi</v-icon>&nbsp;<span class="hidden-xs-only">&nbsp;McLighting </span>connected</span>
         <span class="group pa-2" v-else><v-icon>signal_wifi_off</v-icon>&nbsp;&nbsp;McLighting disconnected</span>
+        <span v-if="num_additional_connections > 0">+{{ num_additional_connections }}</span>
       </v-toolbar>
 
       <v-content id="content" class="mx-auto">
         <v-card>
+          <!-- Color selector -->
           <v-layout row wrap>
             <v-flex xs12 sm5>
               <ColorPicker v-on:selected="onColorSelected" :prop_color="color" :prop_type="picker_type"/>
@@ -28,6 +30,7 @@
             </v-flex>
           </v-layout>
 
+          <!-- Mode list -->
           <v-container pb-5>
             <v-layout row wrap>
               <v-flex xs12 sm6 lg4 xl3 v-for="(mode, index) in modes" :key="mode.id" v-if="edit_mode || !mode.hidden">
@@ -48,6 +51,7 @@
             </v-layout>
           </v-container>
 
+          <!-- Settings button -->
           <v-fab-transition>
             <v-btn
               v-show="!edit_mode"
@@ -59,14 +63,14 @@
               bottom
               right
               fab
-              hover
-            >
+              hover>
               <v-icon>settings</v-icon>
             </v-btn>
           </v-fab-transition>
         </v-card>
 
-        <v-card row wrap v-if="edit_mode">
+        <!-- Settings tab -->
+        <v-card row wrap v-if="edit_mode" id="settings">
           <v-layout row wrap class="pa-3 my-2">
             <v-flex xs12 sm6>
               <p>Dark mode:</p>
@@ -84,11 +88,15 @@
               </v-btn-toggle>
             </v-flex>
             <v-flex xs12>
+              <v-text-field v-model="slave_nodes" label="Additional McLighting Slave Nodes"></v-text-field>
+            </v-flex>
+            <v-flex xs12>
               <v-btn block color="green" dark class="elevation-6 mb-2" @click="saveSettings()"><v-icon>save</v-icon> Save settings</v-btn>
             </v-flex>
           </v-layout>
         </v-card>
 
+        <!-- Snackbar -->
         <v-snackbar
           :timeout="snackbar_timeout"
           top
@@ -111,7 +119,7 @@
 <script>
 /* eslint-disable */
 import ColorPicker from "./components/ColorPicker";
-import * as RWS from 'reconnecting-websocket';
+import * as RWS from 'reconnecting-websocket';  // https://github.com/pladaria/reconnecting-websocket
 
 var host = "192.168.0.49";
 
@@ -128,12 +136,15 @@ export default {
     speed: 192,
     modes: [{ title: "OFF", id: "off" }, { title: "TV", id: "tv" }],
     connection: null,
+    additional_connections: [],
+    num_additional_connections: 0,
     is_connected: false,
     dark_theme: false,
     ws2812fx_mode: null,
     settings: {},
     edit_mode: false,
     picker_type: "circle",
+    slave_nodes: "",
     snackbar: false,
     snackbar_text: "",
     snackbar_color: "info",
@@ -151,6 +162,9 @@ export default {
           }
         });
         this.readSettings();
+      }, response => {
+        console.error("ERROR loading modes", response);
+        this.showSnackbar("Error loading animation modes, please try again...", "error", 5000);
       });
     },
     modeIsActive(mode) {
@@ -165,10 +179,14 @@ export default {
     },
 
     readSettings() {
+      let that = this;
       this.$http.get("//" + host + "/uistate.json").then(data => {
         console.log("readSettings()", data.body);
         this.settings = data.body || {};
         this.applySettings();
+        this.connectAdditionalNodes();
+      }, response => {
+        console.warn("ERROR loading settings", response);
       });
     },
     applySettings() {
@@ -180,6 +198,7 @@ export default {
       });
       this.dark_theme = this.settings.dark_theme || false;
       this.picker_type = this.settings.picker_type || "circle";
+      this.slave_nodes = this.settings.slave_nodes || "";
     },
     saveSettings() {
       var visibility = this.modes.map(mode => {
@@ -190,6 +209,7 @@ export default {
       this.settings.visibility = visibility;
       this.settings.dark_theme = this.dark_theme;
       this.settings.picker_type = this.picker_type;
+      this.settings.slave_nodes = this.slave_nodes;
 
       var formData = new FormData();
       var blob = new Blob([JSON.stringify(this.settings)], {type: 'application/json'});
@@ -198,16 +218,54 @@ export default {
       this.$http.post("//" + host + "/edit", formData).then(data => {
         console.log("SUCCESS saveSettings()", data, this.settings);
         this.showSnackbar("Settings saved", "success", 1500);
+        this.connectAdditionalNodes();
         this.edit_mode = false;
       }, err => {
         console.error("ERROR saveSettings()", err);
         this.showSnackbar("Error saving settings, please try again...", "error", 5000);
       });
+
     },
 
     toggle(mode, index) {
       mode.hidden = !mode.hidden;
       this.$set(this.modes, index, mode);
+    },
+
+    disconnectAllAdditionalNodes() {
+      // Close potentially open connections
+      this.additional_connections.forEach((conn) => {
+        conn.close(1000, "Manually closed::disconnectAllAdditionalNode()", {keepClosed: true});
+      });
+      this.additional_connections = [];
+      this.num_additional_connections = 0;
+    },
+    connectAdditionalNodes() {
+      var that = this;
+      this.disconnectAllAdditionalNodes();
+
+      // Connect to the configured nodes
+      let nodes = this.slave_nodes.split(";");
+      nodes.forEach((host) => {
+        host = host.trim();
+        if (host !== "") {
+          let conn = new RWS("ws://" + host + ":81");
+          console.log("Connecting to additional node", host);
+          that.additional_connections.push(conn);
+  
+          conn.onopen = () => {
+            console.log("Connected to additional node", host);
+            this.num_additional_connections++;
+          };
+          conn.onclose = () => {
+            console.log("Disconnected to additional node", host);
+            that.num_additional_connections--;
+          };
+          conn.onerror = () => {
+            console.log("Error on additional node", host);
+          };
+        }
+      });
     },
 
     ws_connect() {
@@ -218,20 +276,20 @@ export default {
 
       // When the connection is open, send some data to the server
       this.connection.onopen = function() {
-        console.log("WebSocket Open");
+        console.log("WebSocket open");
         that.is_connected = true;
         that.ws_send("$");
       };
 
       // When the connection is open, send some data to the server
       this.connection.onclose = function() {
-        console.log("WebSocket Closed");
+        console.log("WebSocket closed");
         that.is_connected = false;
       };
 
       // Log errors
       this.connection.onerror = function(error) {
-        console.error("WebSocket Error", error);
+        console.error("WebSocket error", error);
         that.is_connected = false;
       };
 
@@ -263,6 +321,10 @@ export default {
     ws_send(message) {
       console.log("WS send: ", message);
       this.connection.send(message);
+
+      this.additional_connections.forEach((conn) => {
+        conn.send(message);
+      });
     },
 
     set_mode(mode_id) {
@@ -311,9 +373,9 @@ export default {
 </script>
 
 <style>
-#content {
-  max-width: 1380px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  #content {
+    max-width: 1380px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 </style>
