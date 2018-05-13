@@ -1,6 +1,6 @@
 # mc_lighting_ui
 
-> New and improved alternative web UI for McLighting.
+> New and improved alternative web UI for [McLighting](https://github.com/toblum/McLighting).
 
 This web UI was completely rebuilt from scratch unsing the reactive vus.js and Vuetify UI framework. It's still in preview and not completed. You can use it in parallel with the current UI if you want.
 
@@ -15,6 +15,12 @@ It has the following new features:
   * Type of color wheel
   * Effects can be hidden
 * You can add additional McLighting nodes that can be controlled together with the master.
+* (Almost) dependency free packaged into one file. (Icons are still loaded from the cloud. Work in progress.)
+* New icons for browser and homescreen. Pin this URL to the your phones homescreen.
+
+## Installation
+
+Just upload the [index2.htm](https://github.com/toblum/McLightingUI/blob/master/dist/index2.htm) to your McLighting node.
 
 ## Build Setup
 
