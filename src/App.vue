@@ -13,7 +13,9 @@
         <span class="group ml-2" v-if="connection_failed" @click="ws_reconnect()"><v-btn color="secondary" ><v-icon>autorenew</v-icon>&nbsp;Reconnect</v-btn></span>
       </v-toolbar>
 
-      <v-content id="content" class="mx-auto">
+      <Loader v-if="loader_state > 0" :state="loader_state" max_states="4" />
+
+      <v-content v-if="loader_state === 0" id="content" class="mx-auto">
         <v-card>
           <!-- Color selector -->
           <v-layout row wrap>
@@ -97,21 +99,21 @@
           </v-layout>
         </v-card>
 
-        <!-- Snackbar -->
-        <v-snackbar
-          :timeout="snackbar_timeout"
-          top
-          :color="snackbar_color"
-          v-model="snackbar"
-        >
-          {{ snackbar_text }}
-        </v-snackbar>
-
         <v-footer color="primary white--text" class="pa-3">
           <div><a href="https://github.com/toblum/McLighting/" target="_blank" class="white--text">Project home</a> - &copy; {{ new Date().getFullYear() }}</div>
           <v-spacer></v-spacer>
         </v-footer>
       </v-content>
+
+      <!-- Snackbar -->
+      <v-snackbar
+        :timeout="snackbar_timeout"
+        top
+        :color="snackbar_color"
+        v-model="snackbar"
+      >
+        {{ snackbar_text }}
+      </v-snackbar>
     </v-app>
 
   </div>
@@ -120,6 +122,7 @@
 <script>
 /* eslint-disable */
 import ColorPicker from "./components/ColorPicker";
+import Loader from "./components/Loader";
 import ReconnectingWebSocket  from 'reconnecting-websocket';  // https://github.com/pladaria/reconnecting-websocket
 
 var host = window.location.hostname;
@@ -139,7 +142,8 @@ export default {
   name: "McLightingUI",
   
   components: {
-    ColorPicker
+    ColorPicker,
+    Loader
   },
 
   data: () => ({
@@ -161,7 +165,8 @@ export default {
     snackbar: false,
     snackbar_text: "",
     snackbar_color: "info",
-    snackbar_timeout: 2000
+    snackbar_timeout: 2000,
+    loader_state: 1
   }),
 
   methods: {
@@ -193,11 +198,13 @@ export default {
 
     readSettings() {
       let that = this;
+      this.loader_state = 2;
       this.$http.get("//" + host + "/uistate.json").then(data => {
         console.log("readSettings()", data.body);
         this.settings = data.body || {};
         this.applySettings();
         this.connectAdditionalNodes();
+        this.ws_connect();
       }, response => {
         console.warn("ERROR loading settings", response);
       });
@@ -261,7 +268,7 @@ export default {
       nodes.forEach((host) => {
         host = host.trim();
         if (host !== "") {
-          let conn = new ReconnectingWebSocket(ws_url, "mclighting", ws_options);
+          let conn = new ReconnectingWebSocket(ws_url, "arduino", ws_options);
           console.log("Connecting to additional node", host);
           that.additional_connections.push(conn);
   
@@ -286,13 +293,18 @@ export default {
 
     ws_connect() {
       var that = this;
-      this.connection = new ReconnectingWebSocket(ws_url, "mclighting", ws_options);
+      this.connection = new ReconnectingWebSocket(ws_url, "arduino", ws_options);
+      this.loader_state = 3;
 
       // When the connection is open, send some data to the server
       this.connection.onopen = function() {
         console.log("WebSocket open");
         that.is_connected = true;
-        that.ws_send("$");
+        that.loader_state = 4;
+        setTimeout(() => {
+          that.loader_state = 0;
+          that.ws_send("$");
+        }, 500);
       };
 
       // When the connection is open, send some data to the server
@@ -386,7 +398,6 @@ export default {
 
   mounted() {
     this.getModes();
-    this.ws_connect();
   }
 };
 </script>
