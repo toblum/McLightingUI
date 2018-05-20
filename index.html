@@ -12,6 +12,17 @@
     <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons"> -->
   </head>
   <body>
+    <div id="browser_warning" style="display:none">
+      <h1>Warning</h1>
+      <p>If you see this message, something went wrong. Please keep in mind that McLightingUI doesn't work in Internet Explorer. Please use an upt-to-date browser like Chrome, Firefox or Edge.</p>
+    </div>
+    <script text="text/javascript">
+      if (navigator.userAgent.indexOf('MSIE')!==-1 || navigator.appVersion.indexOf('Trident/') > 0) {
+        console.log("IE detected");
+        document.getElementById("browser_warning").style.display = 'block';
+        document.getElementById("app").style.display = 'hide';
+      }
+    </script>
     <div id="app"></div>
     <!-- built files will be auto injected -->
   </body>
