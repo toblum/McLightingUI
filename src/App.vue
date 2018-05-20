@@ -10,6 +10,7 @@
         <span class="group pa-2" v-if="is_connected"><v-icon>wifi</v-icon>&nbsp;<span class="hidden-xs-only">&nbsp;McLighting </span>connected</span>
         <span class="group pa-2" v-else><v-icon>signal_wifi_off</v-icon>&nbsp;&nbsp;McLighting disconnected</span>
         <span v-if="num_additional_connections > 0">+{{ num_additional_connections }}</span>
+        <span class="group ml-2" v-if="connection_failed" @click="ws_reconnect()"><v-btn color="secondary" ><v-icon>autorenew</v-icon>&nbsp;Reconnect</v-btn></span>
       </v-toolbar>
 
       <v-content id="content" class="mx-auto">
@@ -88,7 +89,7 @@
               </v-btn-toggle>
             </v-flex>
             <v-flex xs12>
-              <v-text-field v-model="slave_nodes" label="Additional McLighting Slave Nodes"></v-text-field>
+              <v-text-field v-model="slave_nodes" label="Additional McLighting Slave Nodes (experimental)"></v-text-field>
             </v-flex>
             <v-flex xs12>
               <v-btn block color="green" dark class="elevation-6 mb-2" @click="saveSettings()"><v-icon>save</v-icon> Save settings</v-btn>
@@ -119,12 +120,20 @@
 <script>
 /* eslint-disable */
 import ColorPicker from "./components/ColorPicker";
-import * as RWS from 'reconnecting-websocket';  // https://github.com/pladaria/reconnecting-websocket
+import ReconnectingWebSocket  from 'reconnecting-websocket';  // https://github.com/pladaria/reconnecting-websocket
 
 var host = window.location.hostname;
 if (host === "localhost") {
   host = "192.168.0.49";
 }
+const ws_url = "ws://" + host + ":81";
+
+let ws_options = {
+  connectionTimeout: 1000,
+  maxRetries: 2,
+  reconnectionDelayGrowFactor: 2,
+  debug: true
+};
 
 export default {
   name: "McLightingUI",
@@ -139,6 +148,7 @@ export default {
     speed: 192,
     modes: [{ title: "OFF", id: "off" }, { title: "TV", id: "tv" }],
     connection: null,
+    connection_failed: false,
     additional_connections: [],
     num_additional_connections: 0,
     is_connected: false,
@@ -227,7 +237,6 @@ export default {
         console.error("ERROR saveSettings()", err);
         this.showSnackbar("Error saving settings, please try again...", "error", 5000);
       });
-
     },
 
     toggle(mode, index) {
@@ -252,7 +261,7 @@ export default {
       nodes.forEach((host) => {
         host = host.trim();
         if (host !== "") {
-          let conn = new RWS("ws://" + host + ":81");
+          let conn = new ReconnectingWebSocket(ws_url, "mclighting", ws_options);
           console.log("Connecting to additional node", host);
           that.additional_connections.push(conn);
   
@@ -270,12 +279,14 @@ export default {
         }
       });
     },
+    ws_reconnect() {
+      this.connection.reconnect();
+      this.connection_failed = false;
+    },
 
     ws_connect() {
       var that = this;
-      this.connection = new RWS("ws://" + host + ":81");
-      this.connection.debug = true;
-      // connection.timeoutInterval = 5400;
+      this.connection = new ReconnectingWebSocket(ws_url, "mclighting", ws_options);
 
       // When the connection is open, send some data to the server
       this.connection.onopen = function() {
@@ -294,6 +305,11 @@ export default {
       this.connection.onerror = function(error) {
         console.error("WebSocket error", error);
         that.is_connected = false;
+
+        if (that.connection.retryCount >= ws_options.maxRetries) {
+          that.connection_failed = true;
+          that.showSnackbar("Could not connect to McLighting. Tried " + ws_options.maxRetries + " times. Please use the RECONNECT button to try again.", "error", 15000);
+        }
       };
 
       // Log messages from the server
