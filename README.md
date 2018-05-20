@@ -17,8 +17,9 @@ It has the following new features:
   * Type of color wheel
   * Effects can be hidden
 * You can add additional McLighting nodes that can be controlled together with the master.
-* (Almost) dependency free packaged into one file. (Icons are still loaded from the cloud. Work in progress.)
+* Dependency free packaged into one file.
 * New icons for browser and homescreen. Pin this URL to the your phones homescreen.
+* Initialisation status is shown. Better error messages.
 
 ## Installation
 
