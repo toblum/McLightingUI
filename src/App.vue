@@ -207,6 +207,7 @@ export default {
         this.ws_connect();
       }, response => {
         console.warn("ERROR loading settings", response);
+        this.ws_connect();
       });
     },
     applySettings() {
