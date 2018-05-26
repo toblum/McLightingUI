@@ -24,11 +24,12 @@
             </v-flex>
             <v-flex xs12 sm7>
               <v-card-text>
-                <v-slider v-model="color.r" label="R" :max="255" v-on:input="set_color" color="red" persistent-hint :hint="(color.r || 0)+''"></v-slider>
-                <v-slider v-model="color.g" label="G" :max="255" v-on:input="set_color" color="green" persistent-hint :hint="(color.g || 0)+''"></v-slider>
-                <v-slider v-model="color.b" label="B" :max="255" v-on:input="set_color" color="blue" persistent-hint :hint="(color.b || 0)+''"></v-slider>
-                <v-slider v-model="brightness" prepend-icon="wb_incandescent" :max="255" v-on:input="set_brightness" persistent-hint :hint="(brightness || 0)+''"></v-slider>
-                <v-slider v-model="speed" prepend-icon="slow_motion_video" :max="255" v-on:input="set_speed" persistent-hint :hint="(speed || 0)+''"></v-slider>
+                <v-slider v-model="color.r" label="R" :max="255" v-on:input="set_color" color="red" persistent-hint :hint="(color.r || 0)+''" :disabled="auto_mode"></v-slider>
+                <v-slider v-model="color.g" label="G" :max="255" v-on:input="set_color" color="green" persistent-hint :hint="(color.g || 0)+''" :disabled="auto_mode"></v-slider>
+                <v-slider v-model="color.b" label="B" :max="255" v-on:input="set_color" color="blue" persistent-hint :hint="(color.b || 0)+''" :disabled="auto_mode"></v-slider>
+                <v-slider v-model="brightness" prepend-icon="wb_incandescent" :max="255" v-on:input="set_brightness" persistent-hint :hint="(brightness || 0)+''" :disabled="auto_mode"></v-slider>
+                <v-slider v-model="speed" prepend-icon="slow_motion_video" :max="255" v-on:input="set_speed" persistent-hint :hint="(speed || 0)+''" :disabled="auto_mode"></v-slider>
+                <v-switch v-model="auto_mode" prepend-icon="play_circle_outline" :label="`AUTO: ${(auto_mode) ? 'ON' : 'OFF'}`" color="primary"></v-switch>
               </v-card-text>
             </v-flex>
           </v-layout>
@@ -49,7 +50,7 @@
                     v-else>star</v-icon>
                 </span>
 
-                <v-btn :id="mode.id" v-on:click="set_mode(mode.id)" class="elevation-6 white--text" v-bind:class="[modeIsActive(mode) ? 'red' : 'blue']">{{ mode.title }} ({{ mode.id }})</v-btn>
+                <v-btn :id="mode.id" v-on:click="set_mode(mode.id)" :disabled="auto_mode" class="elevation-6 white--text" v-bind:class="[modeIsActive(mode) ? 'red' : 'blue']">{{ mode.title }} ({{ mode.id }})</v-btn>
               </v-flex>
             </v-layout>
           </v-container>
@@ -158,6 +159,7 @@ export default {
     is_connected: false,
     dark_theme: false,
     ws2812fx_mode: null,
+    auto_mode: false,
     settings: {},
     edit_mode: false,
     picker_type: "circle",
@@ -168,6 +170,14 @@ export default {
     snackbar_timeout: 2000,
     loader_state: 1
   }),
+
+  watch: {
+    auto_mode: {
+      handler: function(val, oldVal) {
+        this.toggleAutoplay(val);
+      }
+    }
+  },
 
   methods: {
     getModes() {
@@ -250,6 +260,13 @@ export default {
     toggle(mode, index) {
       mode.hidden = !mode.hidden;
       this.$set(this.modes, index, mode);
+    },
+    toggleAutoplay(mode) {
+      var message = (mode) ? "start" : "stop";
+      this.ws_send(message);
+      if (!mode) {
+        this.ws_send("$");
+      }
     },
 
     disconnectAllAdditionalNodes() {
