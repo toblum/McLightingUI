@@ -24,11 +24,11 @@
             </v-flex>
             <v-flex xs12 sm7>
               <v-card-text>
-                <v-slider v-model="color.r" hint="Red" label="R" :max="255" v-on:input="set_color" color="red"></v-slider>
-                <v-slider v-model="color.g" hint="Green" label="G" :max="255" v-on:input="set_color" color="green"></v-slider>
-                <v-slider v-model="color.b" hint="Blue" label="B" :max="255" v-on:input="set_color" color="blue"></v-slider>
-                <v-slider v-model="brightness" prepend-icon="wb_incandescent" hint="Brightness" :max="255" step="12" ticks v-on:input="set_brightness"></v-slider>
-                <v-slider v-model="speed" prepend-icon="slow_motion_video" hint="Speed" :max="255" step="12" ticks v-on:input="set_speed"></v-slider>
+                <v-slider v-model="color.r" label="R" :max="255" v-on:input="set_color" color="red" persistent-hint :hint="(color.r || 0)+''"></v-slider>
+                <v-slider v-model="color.g" label="G" :max="255" v-on:input="set_color" color="green" persistent-hint :hint="(color.g || 0)+''"></v-slider>
+                <v-slider v-model="color.b" label="B" :max="255" v-on:input="set_color" color="blue" persistent-hint :hint="(color.b || 0)+''"></v-slider>
+                <v-slider v-model="brightness" prepend-icon="wb_incandescent" :max="255" v-on:input="set_brightness" persistent-hint :hint="(brightness || 0)+''"></v-slider>
+                <v-slider v-model="speed" prepend-icon="slow_motion_video" :max="255" v-on:input="set_speed" persistent-hint :hint="(speed || 0)+''"></v-slider>
               </v-card-text>
             </v-flex>
           </v-layout>
